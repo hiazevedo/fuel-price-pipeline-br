@@ -1,10 +1,11 @@
-# fuel-price-pipeline-br
+# Fuel Price Pipeline BR
 
 > Pipeline de dados de preços de combustíveis brasileiros com Medallion Architecture no Databricks
 
 ![Databricks](https://img.shields.io/badge/Databricks-FF3621?style=for-the-badge&logo=databricks&logoColor=white)
 ![Apache Spark](https://img.shields.io/badge/Apache_Spark-E25A1C?style=for-the-badge&logo=apachespark&logoColor=white)
 ![Delta Lake](https://img.shields.io/badge/Delta_Lake-003366?style=for-the-badge&logo=delta&logoColor=white)
+![Unity Catalog](https://img.shields.io/badge/Unity_Catalog-0194E2?style=for-the-badge&logo=databricks&logoColor=white)
 ![Python](https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white)
 
 ---
@@ -56,13 +57,34 @@ ANP Dataset (TSV)
 ## Estrutura do projeto
 
 ```
-fuel-price-pipeline/
+fuel-price-pipeline-br/
+├── config.py                 # Constantes e helper get_spark() centralizados
+├── databricks.yml            # Databricks Asset Bundle — Job sequencial completo
 ├── 00_setup.py               # Catalog, schemas, volumes (Unity Catalog)
 ├── 01_ingest_bronze.py       # Ingestão do TSV para Delta Bronze
 ├── 02_transform_silver.py    # Limpeza, tipagem e enriquecimento
 ├── 03_build_gold.py          # 4 tabelas analíticas com Window Functions
 ├── 04_quality_checks.py      # 22 checks automatizados ✅ 100%
-└── 05_visualizacoes.py       # 6 gráficos com Matplotlib/Seaborn
+├── 05_visualizacoes.py       # 6 gráficos com Matplotlib/Seaborn
+├── dashboard.py              # Notebook de dashboard Databricks SQL
+└── analyze_tables.py         # Inspeção e exploração das tabelas Delta
+```
+
+---
+
+## Databricks Job
+
+O pipeline completo está configurado como **Databricks Job** via Asset Bundle (`databricks.yml`), com 5 tasks encadeadas em sequência:
+
+```
+ingest_bronze → transform_silver → build_gold → quality_checks → visualizacoes
+```
+
+Para fazer o deploy:
+
+```bash
+databricks bundle deploy
+databricks bundle run fuel_price_full_pipeline
 ```
 
 ---
@@ -99,6 +121,7 @@ fuel-price-pipeline/
 | **Delta Lake** | Formato de armazenamento com ACID transactions |
 | **PySpark** | Processamento distribuído |
 | **Window Functions** | RANK e LAG para análises temporais |
+| **Databricks Asset Bundles** | Orquestração do pipeline como código |
 | **Matplotlib / Seaborn** | Visualizações com tema dark |
 | **Databricks SQL** | Dashboard com 6 queries e KPIs |
 
@@ -109,14 +132,28 @@ fuel-price-pipeline/
 ### Pré-requisitos
 - Conta no [Databricks Free Edition](https://www.databricks.com/try-databricks)
 - Dataset: [Gas Prices in Brazil — Kaggle](https://www.kaggle.com/datasets/matheusfreitag/gas-prices-in-brazil)
+- Databricks CLI instalado e configurado
 
 ### Passo a passo
 
 ```bash
-# 1. Faça upload do arquivo 2004-2021.tsv para o Volume:
+# 1. Clone o repositório
+git clone https://github.com/hiazevedo/fuel-price-pipeline-br.git
+cd fuel-price-pipeline-br
+
+# 2. Faça upload do arquivo 2004-2021.tsv para o Volume:
 # /Volumes/fuel_pipeline/bronze/raw_files/
 
-# 2. Execute os notebooks na ordem:
+# 3. Deploy via Asset Bundle
+databricks bundle deploy
+
+# 4. Execute o job completo
+databricks bundle run fuel_price_full_pipeline
+```
+
+Ou execute os notebooks manualmente na ordem:
+
+```
 00_setup.py             # Cria catalog e volumes
 01_ingest_bronze.py     # Ingere o TSV
 02_transform_silver.py  # Transforma os dados
@@ -127,8 +164,7 @@ fuel-price-pipeline/
 
 ### Unity Catalog
 
-```python
-# Catalog e schemas criados automaticamente pelo 00_setup.py
+```
 Catalog : fuel_pipeline
 Schemas : bronze | silver | gold
 Volume  : /Volumes/fuel_pipeline/bronze/raw_files
@@ -158,3 +194,15 @@ A ANP usa o valor `-99999` para indicar ausência de dados em campos de margem e
 Em 2021, todos os campos de preço de distribuição estão nulos na base da ANP — provavelmente por atraso no repasse dos dados. O gráfico usa 2020 para garantir integridade analítica.
 
 ---
+
+## Portfólio
+
+Este projeto faz parte do [Databricks Data Engineering Portfolio](https://github.com/hiazevedo/databricks-portfolio), uma série de projetos práticos cobrindo o ciclo completo de engenharia de dados com Databricks.
+
+| # | Projeto | Tema |
+|---|---------|------|
+| 1 | **fuel-price-pipeline-br** ← você está aqui | Batch · Medallion · ANP |
+| 2 | [earthquake-streaming-pipeline](https://github.com/hiazevedo/earthquake-streaming-pipeline) | Streaming · Auto Loader · USGS |
+| 3 | [earthquake-ml-pipeline](https://github.com/hiazevedo/earthquake-ml-pipeline) | ML · MLflow · Spark ML |
+| 4 | [weather-dlt-pipeline](https://github.com/hiazevedo/weather-dlt-pipeline) | DLT · Workflows · Open-Meteo |
+| 5 | [weather-ml-rain-forecast](https://github.com/hiazevedo/weather-ml-rain-forecast) | ML Avançado · Previsão de Chuva |
