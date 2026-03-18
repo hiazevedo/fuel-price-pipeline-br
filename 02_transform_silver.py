@@ -83,12 +83,30 @@ print("\n Aplicando limpeza...")
 nulos_antes = df_typed.filter(F.col("preco_medio_revenda").isNull()).count()
 print(f"   Registros com preco_medio_revenda nulo: {nulos_antes:,}")
 
+colunas_sentinela = [
+    "margem_media_revenda",
+    "preco_medio_distribuicao",
+    "desvio_padrao_distribuicao",
+    "preco_minimo_distribuicao",
+    "preco_maximo_distribuicao",
+    "coef_variacao_distribuicao",
+    "coef_variacao_revenda",
+    "desvio_padrao_revenda"
+]
+
 df_clean = df_typed \
     .filter(F.col("data_inicial").isNotNull()) \
     .filter(F.col("estado").isNotNull()) \
     .filter(F.col("produto").isNotNull()) \
     .filter(F.col("preco_medio_revenda").isNotNull()) \
     .dropDuplicates(["data_inicial", "data_final", "estado", "produto"])
+
+# Substituir sentinelas -99999 (dado ausente ANP) por null
+for col in colunas_sentinela:
+    df_clean = df_clean.withColumn(
+        col,
+        F.when(F.col(col) < -900, None).otherwise(F.col(col))
+    )
 
 df_clean = df_clean \
     .withColumn("regiao",  F.upper(F.trim(F.col("regiao")))) \
@@ -150,82 +168,6 @@ display(spark.sql("""
     ORDER BY ano
 """))
 
-print("\nSILVER CONCLUÍDO!")
-
-# COMMAND ----------
-
-# DBTITLE 1,Validação final
-print("\nValidação final:")
-display(spark.sql("""
-    SELECT
-        ano,
-        COUNT(*)                           AS registros,
-        COUNT(DISTINCT estado)             AS estados,
-        COUNT(DISTINCT produto)            AS produtos,
-        ROUND(AVG(preco_medio_revenda), 3) AS preco_medio_revenda
-    FROM fuel_pipeline.silver.anp_combustiveis
-    GROUP BY ano
-    ORDER BY ano
-"""))
-
-print("\nSILVER CONCLUÍDO!")
-
-# COMMAND ----------
-
-# MAGIC %md
-# MAGIC ### CORREÇÃO SILVER — substituir sentinelas -99999 por null
-
-# COMMAND ----------
-
-# DBTITLE 1,CORREÇÃO SILVER
-print("\n" + "=" * 60)
-print("  CORREÇÃO DE SENTINELAS -99999 (dado ausente ANP)")
-print("=" * 60)
-
-colunas_sentinela = [
-    "margem_media_revenda",
-    "preco_medio_distribuicao",
-    "desvio_padrao_distribuicao",
-    "preco_minimo_distribuicao",
-    "preco_maximo_distribuicao",
-    "coef_variacao_distribuicao",
-    "coef_variacao_revenda",
-    "desvio_padrao_revenda"
-]
-
-print("Corrigindo sentinelas -99999 na Silver...")
-
-df_silver = spark.table("fuel_pipeline.silver.anp_combustiveis")
-
-df_corrigido = df_silver
-for col in colunas_sentinela:
-    df_corrigido = df_corrigido.withColumn(
-        col,
-        F.when(F.col(col) < -900, None).otherwise(F.col(col))
-    )
-
-(
-    df_corrigido
-    .write
-    .format("delta")
-    .mode("overwrite")
-    .option("mergeSchema", "true")
-    .partitionBy("ano", "produto")
-    .saveAsTable("fuel_pipeline.silver.anp_combustiveis")
-)
-
-print("Silver corrigida!")
-
-print("\nValidação pós-correção:")
-display(spark.sql("""
-    SELECT
-        MIN(margem_media_revenda)      AS min_margem,
-        MAX(margem_media_revenda)      AS max_margem,
-        MIN(preco_medio_distribuicao)  AS min_dist,
-        MAX(preco_medio_distribuicao)  AS max_dist,
-        COUNT(*) FILTER (WHERE margem_media_revenda     IS NULL) AS nulos_margem,
-        COUNT(*) FILTER (WHERE preco_medio_distribuicao IS NULL) AS nulos_dist
-    FROM fuel_pipeline.silver.anp_combustiveis
-"""))
+print("\n02_transform_silver.py CONCLUÍDO!")
 
 print("02_transform_silver.py CONCLUÍDO!")

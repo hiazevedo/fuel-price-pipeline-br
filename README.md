@@ -9,7 +9,7 @@
 
 ---
 
-## Sobre o projeto
+## 📌 Sobre o projeto
 
 Pipeline completo de engenharia de dados que processa **120.823 registros** de preços de combustíveis da ANP (Agência Nacional do Petróleo) entre 2004 e 2021, utilizando a arquitetura Medallion (Bronze → Silver → Gold) no Databricks Free Edition com Unity Catalog.
 

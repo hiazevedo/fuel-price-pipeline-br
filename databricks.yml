@@ -1,0 +1,54 @@
+bundle:
+  name: fuel-price-pipeline-br
+
+workspace:
+  host: https://dbc-4755d9a9-d11b.cloud.databricks.com
+  root_path: ~/.bundle/${bundle.name}/${bundle.target}
+
+targets:
+  dev:
+    mode: development
+    default: true
+
+  prod:
+    mode: production
+    workspace:
+      root_path: /Shared/fuel-price-pipeline-br
+
+resources:
+  jobs:
+    fuel_price_full_pipeline:
+      name: "[fuel-price] Pipeline Completo (manual)"
+      tasks:
+        - task_key: ingest_bronze
+          notebook_task:
+            notebook_path: ${workspace.file_path}/01_ingest_bronze
+            source: WORKSPACE
+
+        - task_key: transform_silver
+          depends_on:
+            - task_key: ingest_bronze
+          notebook_task:
+            notebook_path: ${workspace.file_path}/02_transform_silver
+            source: WORKSPACE
+
+        - task_key: build_gold
+          depends_on:
+            - task_key: transform_silver
+          notebook_task:
+            notebook_path: ${workspace.file_path}/03_build_gold
+            source: WORKSPACE
+
+        - task_key: quality_checks
+          depends_on:
+            - task_key: build_gold
+          notebook_task:
+            notebook_path: ${workspace.file_path}/04_quality_checks
+            source: WORKSPACE
+
+        - task_key: visualizacoes
+          depends_on:
+            - task_key: quality_checks
+          notebook_task:
+            notebook_path: ${workspace.file_path}/05_visualizacoes
+            source: WORKSPACE

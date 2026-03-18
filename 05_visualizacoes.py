@@ -9,6 +9,9 @@ import matplotlib.ticker as mticker
 import seaborn as sns
 import pandas as pd
 import numpy as np
+from config import get_spark
+
+spark = get_spark()
 
 # COMMAND ----------
 

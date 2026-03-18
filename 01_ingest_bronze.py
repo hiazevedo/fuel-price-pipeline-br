@@ -12,7 +12,7 @@ LOAD_DATE     = datetime.now().strftime("%Y-%m-%d")
 
 # DBTITLE 1,Verificar arquivos disponíveis no Volume
 print("Arquivos no Volume:")
-files = dbutils.fs.ls(f"dbfs:{BRONZE_VOLUME}")
+files = dbutils.fs.ls(BRONZE_VOLUME)
 for f in files:
     print(f"   {f.name}  ({f.size:,} bytes)")
 
